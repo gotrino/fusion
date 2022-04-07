@@ -26,7 +26,7 @@ func Navigate(ctx context.Context, params ActivityComposer) {
 type Activity struct {
 	Title     string
 	Visible   bool
-	Launcher  Icon
+	Launcher  Launcher
 	Fragments []Fragment
 }
 
@@ -37,6 +37,7 @@ type ActivityComposer interface {
 
 // Application declares an Application and its Activities or Pages - depending on the actual renderer.
 type Application struct {
+	Title          string
 	Activities     []ActivityComposer
 	Authentication Authentication
 }

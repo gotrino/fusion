@@ -1,9 +1,10 @@
 package app
 
 type Icon struct {
-	Name  string
+	Icon  string
 	Title string
 	Hint  string
+	Link  string
 }
 
 func (Icon) IsLauncher() bool {
