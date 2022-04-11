@@ -4,13 +4,26 @@ import (
 	"github.com/gotrino/fusion/spec/app"
 )
 
-type Form[T any] struct {
+type Form struct {
+	Title       string
+	Description string
+
 	Resource app.Resource
 	Fields   []Field
 }
 
-func (f Form[T]) IsFragment() bool {
+func (f Form) IsFragment() bool {
 	return true
+}
+
+type StencilText struct {
+	Label        string
+	Description  string
+	Disabled     bool
+	DefaultValue string
+	Lines        int
+	ToModel      func(src string, dst any) error
+	FromModel    func(src any) string
 }
 
 // Field is a marker interface to identify a field mapping.
@@ -30,13 +43,30 @@ func (Header) IsField() bool {
 
 // A Text is something like an edit text field.
 type Text[T any] struct {
-	Text      string
-	Hint      string
-	Disabled  bool
-	Lines     int
-	Pattern   string
-	ToModel   func(src string, dst *T) error
-	FromModel func(src T) string
+	Label        string
+	Description  string
+	Disabled     bool
+	DefaultValue string
+	Lines        int
+	ToModel      func(src string, dst *T) error
+	FromModel    func(src T) string
+}
+
+func (t Text[T]) ToStencil() StencilText {
+	return StencilText{
+		Label:        t.Label,
+		Description:  t.Description,
+		Disabled:     t.Disabled,
+		DefaultValue: t.DefaultValue,
+		Lines:        t.Lines,
+		ToModel: func(src string, dst any) error {
+			x := dst.(T) // TODO not correct
+			return t.ToModel(src, &x)
+		},
+		FromModel: func(src any) string {
+			return t.FromModel(src.(T))
+		},
+	}
 }
 
 func (Text[T]) IsField() bool {

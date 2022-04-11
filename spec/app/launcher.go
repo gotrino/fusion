@@ -1,7 +1,9 @@
 package app
 
+import "github.com/gotrino/fusion/spec/svg"
+
 type Icon struct {
-	Icon  string
+	Icon  svg.SVG
 	Title string
 	Hint  string
 	Link  string

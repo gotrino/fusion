@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"github.com/gotrino/fusion/spec/app"
 	"sync"
@@ -8,6 +9,13 @@ import (
 
 var runtimes = map[string]Factory{}
 var lock sync.Mutex
+
+type State struct {
+	Context     context.Context
+	Application app.Application
+	Activities  []app.Activity
+	Active      int
+}
 
 type Runtime interface {
 	Start(spec app.ApplicationComposer) error

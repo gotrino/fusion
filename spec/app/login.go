@@ -25,3 +25,14 @@ type Bearer struct {
 func (Bearer) IsAuthentication() bool {
 	return true
 }
+
+// A HardcodedBearer is like a bearer but with a hardcoded token.
+type HardcodedBearer struct {
+	Token string
+}
+
+func (HardcodedBearer) IsAuthentication() bool {
+	return true
+}
+
+

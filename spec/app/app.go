@@ -2,7 +2,19 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"log"
 )
+
+type Navigator struct {
+	Delegate interface {
+		Navigate(params ActivityComposer)
+	}
+}
+
+func (n Navigator) Navigate(params ActivityComposer) {
+	n.Delegate.Navigate(params)
+}
 
 // Fragment is a marker interface to identify composables of gotrino zero.
 type Fragment interface {
@@ -18,8 +30,9 @@ type Launcher interface {
 // A Route provides some marshall and unmarshal logic.
 type Route string
 
+// Navigate assembles a query link based on the given composer params, to ease things.
 func Navigate(ctx context.Context, params ActivityComposer) {
-
+	FromContext[Navigator](ctx).Navigate(params)
 }
 
 // An Activity declares a bunch of Fragments.
@@ -28,6 +41,12 @@ type Activity struct {
 	Visible   bool
 	Launcher  Launcher
 	Fragments []Fragment
+}
+
+type Connection struct {
+	Scheme string
+	Host   string
+	Port   int
 }
 
 // ActivityComposer creates and describes a concrete Activity instance.
@@ -40,6 +59,7 @@ type Application struct {
 	Title          string
 	Activities     []ActivityComposer
 	Authentication Authentication
+	Connection     Connection
 }
 
 // An ApplicationComposer creates and describes a concrete Application instance.
@@ -62,4 +82,24 @@ type Repository interface {
 // Resource is a marker interface to represent a single collection.
 type Resource interface {
 	IsResource() bool
+}
+
+type myCtxKey string
+
+// FromContext cannot be used with interfaces because they boil down to any without type information.
+func FromContext[T any](ctx context.Context) T {
+	var t T
+	k := fmt.Sprintf("%T", t)
+	log.Printf("context: grabbing %s\n", k)
+
+	a := ctx.Value(myCtxKey(k))
+	return a.(T)
+}
+
+// WithContext cannot be used interfaces because they loose (any) type information.
+func WithContext[T any](ctx context.Context, t T) context.Context {
+	k := fmt.Sprintf("%T", t)
+	log.Printf("context: setting %s\n", k)
+
+	return context.WithValue(ctx, myCtxKey(k), t)
 }
