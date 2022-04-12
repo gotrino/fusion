@@ -2,6 +2,15 @@ package app
 
 import "errors"
 
+// NotFound means that the resource has not been found.
+func NotFound(err error) bool {
+	var notAllowed interface {
+		NotFound() bool
+	}
+
+	return errors.As(err, &notAllowed) && notAllowed.NotFound()
+}
+
 // Forbidden means that the user is authenticated but the authorization has failed. This is usually permanent,
 // because the access control mechanism forbids the access to that resource.
 // This is equal to http.StatusForbidden (403).

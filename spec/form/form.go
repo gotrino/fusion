@@ -7,9 +7,11 @@ import (
 type Form struct {
 	Title       string
 	Description string
-
-	Resource app.Resource
-	Fields   []Field
+	CanWrite    bool
+	CanDelete   bool
+	CanCancel   bool
+	Resource    app.Resource
+	Fields      []Field
 }
 
 func (f Form) IsFragment() bool {
@@ -17,13 +19,13 @@ func (f Form) IsFragment() bool {
 }
 
 type StencilText struct {
-	Label        string
-	Description  string
-	Disabled     bool
-	DefaultValue string
-	Lines        int
-	ToModel      func(src string, dst any) error
-	FromModel    func(src any) string
+	Label       string
+	Description string
+	Disabled    bool
+	Placeholder string
+	Lines       int
+	ToModel     func(src string, dst any) (any, error)
+	FromModel   func(src any) string
 }
 
 // Field is a marker interface to identify a field mapping.
@@ -31,37 +33,26 @@ type Field interface {
 	IsField() bool
 }
 
-// Header is a kind of content separator for logical sections, which is not really an interactive but informative field.
-type Header struct {
-	Text string
-	Hint string
-}
-
-func (Header) IsField() bool {
-	return true
-}
-
 // A Text is something like an edit text field.
 type Text[T any] struct {
-	Label        string
-	Description  string
-	Disabled     bool
-	DefaultValue string
-	Lines        int
-	ToModel      func(src string, dst *T) error
-	FromModel    func(src T) string
+	Label       string
+	Description string
+	Disabled    bool
+	Placeholder string
+	Lines       int
+	ToModel     func(src string, state T) (T, error)
+	FromModel   func(src T) string
 }
 
 func (t Text[T]) ToStencil() StencilText {
 	return StencilText{
-		Label:        t.Label,
-		Description:  t.Description,
-		Disabled:     t.Disabled,
-		DefaultValue: t.DefaultValue,
-		Lines:        t.Lines,
-		ToModel: func(src string, dst any) error {
-			x := dst.(T) // TODO not correct
-			return t.ToModel(src, &x)
+		Label:       t.Label,
+		Description: t.Description,
+		Disabled:    t.Disabled,
+		Placeholder: t.Placeholder,
+		Lines:       t.Lines,
+		ToModel: func(src string, dst any) (any, error) {
+			return t.ToModel(src, dst.(T))
 		},
 		FromModel: func(src any) string {
 			return t.FromModel(src.(T))

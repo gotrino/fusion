@@ -53,6 +53,10 @@ func (e httpError) ProtocolError() bool {
 	return e.status == decoderError || e.status == encoderError
 }
 
+func (e httpError) NotFound() bool {
+	return e.status == http.StatusNotFound
+}
+
 func (e httpError) Unwrap() error {
 	return e.cause
 }

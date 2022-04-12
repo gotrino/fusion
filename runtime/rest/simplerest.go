@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gotrino/fusion/spec/app"
+	"strings"
 
 	"io"
 	"net/http"
@@ -13,15 +14,12 @@ import (
 	"reflect"
 )
 
-type RepositoryImplStencil interface {
-	List() ([]any, error)        // any is of type []interface boxing each T
-	Load(id string) (any, error) // any is of type T
-	Delete(id string) error
-	Save(t any) error // any is of type T
-}
-
 func REST[T any](ctx context.Context, resource string) RESTRepo[T] {
-	base, err := url.Parse("http://localhost:8081" + resource)
+	a := app.FromContext[app.Application](ctx)
+	if strings.HasPrefix(resource, "/") {
+		resource = resource[1:]
+	}
+	base, err := url.Parse(fmt.Sprintf("%s://%s:%d/%s", a.Connection.Scheme, a.Connection.Host, a.Connection.Port, resource))
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +49,7 @@ type RESTRepo[T any] struct {
 	Resource string
 }
 
-func (r RESTRepo[T]) ToStencil() RepositoryImplStencil {
+func (r RESTRepo[T]) ToStencil() app.RepositoryImplStencil {
 	return stencilAdapter[T]{r}
 }
 
@@ -133,9 +131,11 @@ func (r RESTRepo[T]) Save(t T) error {
 		return httpError{status: encoderError, cause: err}
 	}
 
-	resp, err := r.client().Do(r.req("PUT", id, bytes.NewReader(buf)))
+	req := r.req("PUT", id, bytes.NewReader(buf))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := r.client().Do(req)
 	if err != nil {
-		return nil
+		return httpError{cause: err}
 	}
 
 	defer resp.Body.Close()
@@ -144,6 +144,8 @@ func (r RESTRepo[T]) Save(t T) error {
 	case http.StatusAccepted:
 		fallthrough
 	case http.StatusNoContent:
+		fallthrough
+	case http.StatusCreated:
 		fallthrough
 	case http.StatusOK:
 		return nil
