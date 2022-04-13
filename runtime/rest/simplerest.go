@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gotrino/fusion/spec/app"
+	"log"
+	"path"
 	"strings"
 
 	"io"
@@ -23,6 +25,7 @@ func REST[T any](ctx context.Context, resource string) RESTRepo[T] {
 	if err != nil {
 		panic(err)
 	}
+	log.Println("!! rest repo using", base.String())
 
 	myApp := app.FromContext[app.Application](ctx)
 
@@ -99,7 +102,9 @@ func (r RESTRepo[T]) Load(id string) (T, error) {
 
 // Delete performs a delete on the root resource attached with the id, like DELETE /api/movies/{id}.
 func (r RESTRepo[T]) Delete(id string) error {
-	resp, err := r.client().Do(r.req("DELETE", id, nil))
+	req := r.req("DELETE", id, nil)
+	log.Println(">>", req.URL)
+	resp, err := r.client().Do(req)
 	if err != nil {
 		return err
 	}
@@ -162,7 +167,7 @@ func (r RESTRepo[T]) client() *http.Client {
 	return r.Client
 }
 
-func (r RESTRepo[T]) req(method string, path string, body io.Reader) *http.Request {
+func (r RESTRepo[T]) req(method string, p string, body io.Reader) *http.Request {
 	if r.Base == nil {
 		u, err := url.Parse("http://localhost:8080")
 		if err != nil {
@@ -172,7 +177,7 @@ func (r RESTRepo[T]) req(method string, path string, body io.Reader) *http.Reque
 		r.Base = u
 	}
 
-	u, err := r.Base.Parse(path)
+	u, err := r.Base.Parse(path.Join(r.Base.String(), p))
 	if err != nil {
 		panic(err)
 	}

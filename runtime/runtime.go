@@ -19,6 +19,7 @@ type State struct {
 
 type Runtime interface {
 	Start(spec app.ApplicationComposer) error
+	Spawn(f func())
 }
 
 type Factory func() (Runtime, error)

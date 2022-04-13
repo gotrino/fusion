@@ -6,13 +6,15 @@ import (
 	"log"
 )
 
-type Navigator struct {
+type RT struct {
 	Delegate interface {
 		Navigate(params ActivityComposer)
+		Spawn(f func())
+		Refresh()
 	}
 }
 
-func (n Navigator) Navigate(params ActivityComposer) {
+func (n RT) Navigate(params ActivityComposer) {
 	n.Delegate.Navigate(params)
 }
 
@@ -32,7 +34,7 @@ type Route string
 
 // Navigate assembles a query link based on the given composer params, to ease things.
 func Navigate(ctx context.Context, params ActivityComposer) {
-	FromContext[Navigator](ctx).Navigate(params)
+	FromContext[RT](ctx).Navigate(params)
 }
 
 // An Activity declares a bunch of Fragments.
