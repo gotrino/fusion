@@ -86,20 +86,8 @@ type RepositoryImplStencil interface {
 // Repository is a marker interface for a repository specification which represents a collection of resources.
 type Repository interface {
 	IsRepository() bool
-	New(ctx context.Context) RepositoryImplStencil
-}
-
-type ResourceImplStencil interface {
-	Load() (any, error) // any is of type T
-	Delete() error
-	Save(t any) error // any is of type T
-}
-
-// Resource is a marker interface to represent a single collection.
-type Resource interface {
-	New(ctx context.Context) ResourceImplStencil
 	GetDefault() any
-	IsResource() bool
+	New(ctx context.Context) RepositoryImplStencil
 }
 
 type myCtxKey string

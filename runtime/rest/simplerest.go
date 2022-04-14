@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gotrino/fusion/spec/app"
+	http2 "github.com/gotrino/fusion/spec/http"
 	"log"
 	"path"
 	"strings"
@@ -27,18 +28,7 @@ func REST[T any](ctx context.Context, resource string) RESTRepo[T] {
 	}
 	log.Println("!! rest repo using", base.String())
 
-	myApp := app.FromContext[app.Application](ctx)
-
-	return RESTRepo[T]{Base: base, WithRequest: func(request *http.Request) *http.Request {
-		switch t := myApp.Authentication.(type) {
-		case app.HardcodedBearer:
-			request.Header.Set("Authorization", "Bearer "+t.Token)
-		default:
-			panic(fmt.Errorf("unsupported authorization: %T", t))
-		}
-
-		return request
-	}}
+	return RESTRepo[T]{Base: base, WithRequest: http2.Authorizer(ctx)}
 }
 
 // RESTRepo is a simple more or less idiomatic REST based CRUD repository adapter. It makes really strong assumptions
@@ -66,13 +56,13 @@ func (r RESTRepo[T]) List() ([]T, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, httpError{status: resp.StatusCode}
+		return nil, http2.HttpError{Status: resp.StatusCode}
 	}
 
 	var res []T
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(&res); err != nil {
-		return nil, httpError{status: decoderError, cause: err}
+		return nil, http2.HttpError{Status: http2.DecoderError, Cause: err}
 	}
 
 	return res, nil
@@ -89,12 +79,12 @@ func (r RESTRepo[T]) Load(id string) (T, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return res, httpError{status: resp.StatusCode}
+		return res, http2.HttpError{Status: resp.StatusCode}
 	}
 
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(&res); err != nil {
-		return res, httpError{status: decoderError, cause: err}
+		return res, http2.HttpError{Status: http2.DecoderError, Cause: err}
 	}
 
 	return res, nil
@@ -118,7 +108,7 @@ func (r RESTRepo[T]) Delete(id string) error {
 		fallthrough
 	case http.StatusOK:
 	default:
-		return httpError{status: resp.StatusCode}
+		return http2.HttpError{Status: resp.StatusCode}
 	}
 
 	return nil
@@ -133,14 +123,14 @@ func (r RESTRepo[T]) Save(t T) error {
 
 	buf, err := json.Marshal(t)
 	if err != nil {
-		return httpError{status: encoderError, cause: err}
+		return http2.HttpError{Status: http2.EncoderError, Cause: err}
 	}
 
 	req := r.req("PUT", id, bytes.NewReader(buf))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := r.client().Do(req)
 	if err != nil {
-		return httpError{cause: err}
+		return http2.HttpError{Cause: err}
 	}
 
 	defer resp.Body.Close()
@@ -155,7 +145,7 @@ func (r RESTRepo[T]) Save(t T) error {
 	case http.StatusOK:
 		return nil
 	default:
-		return httpError{status: resp.StatusCode}
+		return http2.HttpError{Status: resp.StatusCode}
 	}
 }
 

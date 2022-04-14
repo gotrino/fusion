@@ -10,7 +10,8 @@ type Form struct {
 	CanWrite    bool
 	CanDelete   bool
 	CanCancel   bool
-	Resource    app.Resource
+	Repository  app.Repository
+	ResourceID  string // ID of the resource to lookup in the repository
 	Fields      []Field
 }
 
